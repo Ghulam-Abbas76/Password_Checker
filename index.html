@@ -1,0 +1,156 @@
+
+<style>
+  .root { padding: 1.5rem 0; font-family: var(--font-sans); }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .label { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 6px; }
+  .pw-input { width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 15px; padding: 10px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-primary); outline: none; }
+  .pw-input:focus { box-shadow: 0 0 0 2px #B5D4F4; }
+  .bar-bg { height: 6px; background: var(--color-background-tertiary); border-radius: 3px; margin: 10px 0 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s, background 0.4s; }
+  .strength-label { font-size: 13px; font-weight: 500; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font-size: 12px; padding: 3px 10px; border-radius: 20px; }
+  .chip-on { background: #EAF3DE; color: #3B6D11; border: 0.5px solid #97C459; }
+  .chip-off { background: var(--color-background-tertiary); color: var(--color-text-tertiary); border: 0.5px solid var(--color-border-tertiary); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; text-align: center; }
+  .metric-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .metric-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .options { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+  .opt-label { font-size: 13px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+  .gen-btn { margin-top: 8px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 18px; background: transparent; color: var(--color-text-primary); font-size: 14px; font-family: var(--font-sans); }
+  .gen-btn:hover { background: var(--color-background-secondary); }
+  .gen-btn:active { transform: scale(0.98); }
+  .copy-btn { font-size: 12px; padding: 4px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-sans); float: right; margin-top: -2px; }
+  .copy-btn:hover { background: var(--color-background-secondary); }
+  .tip { font-size: 12px; color: var(--color-text-secondary); margin-top: 8px; padding: 8px 10px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); border-left: 3px solid #B5D4F4; }
+  .section-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; color: var(--color-text-primary); }
+  .len-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .gen-pw { font-family: var(--font-mono); font-size: 14px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; word-break: break-all; color: var(--color-text-primary); min-height: 36px; border: 0.5px solid var(--color-border-tertiary); }
+</style>
+
+<div class="root">
+  <h2 class="sr-only" style="position:absolute;left:-9999px">Password Strength Analyzer and Generator</h2>
+
+  <div class="card">
+    <div class="section-title">Analyze a password</div>
+    <div class="label">Enter your password</div>
+    <input class="pw-input" type="text" id="pwInput" placeholder="Type a password..." autocomplete="off" oninput="analyze()" />
+    <div class="bar-bg"><div class="bar-fill" id="bar" style="width:0%;background:#E24B4A"></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="strength-label" id="strengthLabel" style="color:var(--color-text-tertiary)">—</span>
+      <span style="font-size:12px;color:var(--color-text-tertiary)" id="crackTime"></span>
+    </div>
+    <div class="metrics" id="metrics">
+      <div class="metric"><div class="metric-val" id="mLen">0</div><div class="metric-lbl">Length</div></div>
+      <div class="metric"><div class="metric-val" id="mEnt">0</div><div class="metric-lbl">Entropy (bits)</div></div>
+      <div class="metric"><div class="metric-val" id="mPool">0</div><div class="metric-lbl">Char pool</div></div>
+    </div>
+    <div class="label" style="margin-top:14px">Character types detected</div>
+    <div class="chips" id="chips">
+      <span class="chip chip-off" id="cLow">a–z lowercase</span>
+      <span class="chip chip-off" id="cUp">A–Z uppercase</span>
+      <span class="chip chip-off" id="cNum">0–9 digits</span>
+      <span class="chip chip-off" id="cSym">!@# symbols</span>
+    </div>
+    <div id="tipBox" class="tip" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Generate a strong password</div>
+    <div class="len-row">
+      <span class="label" style="margin:0;white-space:nowrap">Length: <strong id="lenVal">16</strong></span>
+      <input type="range" min="8" max="64" value="16" step="1" id="lenSlider" style="flex:1" oninput="updateLen()" />
+    </div>
+    <div class="options">
+      <label class="opt-label"><input type="checkbox" id="gLow" checked> Lowercase</label>
+      <label class="opt-label"><input type="checkbox" id="gUp" checked> Uppercase</label>
+      <label class="opt-label"><input type="checkbox" id="gNum" checked> Digits</label>
+      <label class="opt-label"><input type="checkbox" id="gSym" checked> Symbols</label>
+    </div>
+    <div class="gen-pw" id="genPw">Click generate to create a password</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="gen-btn" onclick="generate()"><i class="ti ti-refresh" aria-hidden="true"></i> Generate</button>
+      <button class="copy-btn" onclick="copyPw()" id="copyBtn">Copy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function analyze() {
+  const pw = document.getElementById('pwInput').value;
+  const len = pw.length;
+  const hasLow = /[a-z]/.test(pw);
+  const hasUp = /[A-Z]/.test(pw);
+  const hasNum = /[0-9]/.test(pw);
+  const hasSym = /[^a-zA-Z0-9]/.test(pw);
+  let pool = 0;
+  if (hasLow) pool += 26;
+  if (hasUp) pool += 26;
+  if (hasNum) pool += 10;
+  if (hasSym) pool += 32;
+  const entropy = pool > 0 && len > 0 ? Math.round(len * Math.log2(pool)) : 0;
+  document.getElementById('mLen').textContent = len;
+  document.getElementById('mEnt').textContent = entropy;
+  document.getElementById('mPool').textContent = pool;
+  const toggle = (id, on) => {
+    const el = document.getElementById(id);
+    el.className = 'chip ' + (on ? 'chip-on' : 'chip-off');
+  };
+  toggle('cLow', hasLow);
+  toggle('cUp', hasUp);
+  toggle('cNum', hasNum);
+  toggle('cSym', hasSym);
+  let score = 0, label = '—', color = 'var(--color-text-tertiary)', barColor = '#E24B4A', barW = 0;
+  if (len === 0) { label = '—'; barW = 0; }
+  else if (entropy < 28) { score = 1; label = 'Very weak'; barColor = '#E24B4A'; barW = 10; color = '#A32D2D'; }
+  else if (entropy < 36) { score = 2; label = 'Weak'; barColor = '#EF9F27'; barW = 30; color = '#854F0B'; }
+  else if (entropy < 60) { score = 3; label = 'Fair'; barColor = '#EF9F27'; barW = 55; color = '#854F0B'; }
+  else if (entropy < 80) { score = 4; label = 'Strong'; barColor = '#639922'; barW = 78; color = '#3B6D11'; }
+  else { score = 5; label = 'Very strong'; barColor = '#1D9E75'; barW = 100; color = '#085041'; }
+  document.getElementById('bar').style.width = barW + '%';
+  document.getElementById('bar').style.background = barColor;
+  document.getElementById('strengthLabel').textContent = len > 0 ? label : '—';
+  document.getElementById('strengthLabel').style.color = color;
+  const crackEstimates = ['', 'instantly', 'seconds to minutes', 'hours to days', 'years', 'centuries or more'];
+  document.getElementById('crackTime').textContent = len > 0 ? 'Crack time: ~' + crackEstimates[score] : '';
+  const tips = [];
+  if (len < 12) tips.push('Use at least 12 characters.');
+  if (!hasUp) tips.push('Add uppercase letters.');
+  if (!hasNum) tips.push('Include numbers.');
+  if (!hasSym) tips.push('Add symbols like !@#$.');
+  if (len > 0 && tips.length > 0) {
+    document.getElementById('tipBox').style.display = 'block';
+    document.getElementById('tipBox').textContent = 'Tip: ' + tips[0];
+  } else {
+    document.getElementById('tipBox').style.display = 'none';
+  }
+}
+function updateLen() {
+  document.getElementById('lenVal').textContent = document.getElementById('lenSlider').value;
+}
+function generate() {
+  const len = parseInt(document.getElementById('lenSlider').value);
+  let charset = '';
+  if (document.getElementById('gLow').checked) charset += 'abcdefghijklmnopqrstuvwxyz';
+  if (document.getElementById('gUp').checked) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if (document.getElementById('gNum').checked) charset += '0123456789';
+  if (document.getElementById('gSym').checked) charset += '!@#$%^&*()-_=+[]{}|;:,.<>?';
+  if (!charset) { document.getElementById('genPw').textContent = 'Select at least one character type.'; return; }
+  const arr = new Uint32Array(len);
+  crypto.getRandomValues(arr);
+  let pw = '';
+  for (let i = 0; i < len; i++) pw += charset[arr[i] % charset.length];
+  document.getElementById('genPw').textContent = pw;
+  document.getElementById('copyBtn').textContent = 'Copy';
+}
+function copyPw() {
+  const pw = document.getElementById('genPw').textContent;
+  if (!pw || pw.includes('Click') || pw.includes('Select')) return;
+  navigator.clipboard.writeText(pw).then(() => {
+    document.getElementById('copyBtn').textContent = 'Copied!';
+    setTimeout(() => document.getElementById('copyBtn').textContent = 'Copy', 2000);
+  });
+}
+analyze();
+</script>
